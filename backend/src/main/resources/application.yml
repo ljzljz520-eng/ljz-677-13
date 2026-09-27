@@ -45,6 +45,11 @@ jwt:
   secret: excel-import-system-jwt-secret-key-2024-very-long-and-secure
   expiration: 86400000
 
+# 上送队列配置
+report:
+  # 国家平台模拟接口地址（容器/本机均指向后端自身提供的模拟接口）
+  national-platform-url: ${NATIONAL_PLATFORM_URL:http://localhost:8080/api/mock/national/report}
+
 # 日志配置
 logging:
   level:

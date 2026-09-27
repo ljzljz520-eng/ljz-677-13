@@ -59,9 +59,9 @@
                 type="success"
                 link
                 size="small"
-                @click="reportData(row)"
+                @click="openQueueDialog(row)"
               >
-                上报
+                上送
               </el-button>
             </div>
           </template>
@@ -82,67 +82,37 @@
       </div>
     </div>
 
-    <!-- 上报结果弹窗 -->
+    <!-- 加入上送队列配置弹窗 -->
     <el-dialog
-      v-model="reportDialogVisible"
-      title="数据上报结果"
-      width="600px"
+      v-model="queueDialogVisible"
+      title="加入上送队列"
+      width="480px"
       :close-on-click-modal="false"
     >
-      <div v-if="reportResult">
-        <!-- 结果统计 -->
-        <div class="grid grid-cols-3 gap-4 mb-6">
-          <div class="bg-blue-50 rounded-lg p-4 text-center">
-            <p class="text-2xl font-bold text-blue-600">{{ reportResult.totalCount }}</p>
-            <p class="text-gray-500 text-sm">上报总数</p>
-          </div>
-          <div class="bg-green-50 rounded-lg p-4 text-center">
-            <p class="text-2xl font-bold text-green-600">{{ reportResult.successCount }}</p>
-            <p class="text-gray-500 text-sm">成功</p>
-          </div>
-          <div class="bg-red-50 rounded-lg p-4 text-center">
-            <p class="text-2xl font-bold text-red-600">{{ reportResult.failCount }}</p>
-            <p class="text-gray-500 text-sm">失败</p>
-          </div>
+      <div class="space-y-5 py-2">
+        <p class="text-sm text-gray-500">
+          批次：<span class="font-mono">{{ currentRow?.batchNo }}</span>
+        </p>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-700">每批上送数量</span>
+          <el-input-number v-model="queueForm.batchSize" :min="1" :max="5000" :step="100" />
         </div>
-
-        <!-- 错误列表 -->
-        <div v-if="reportResult.errorList && reportResult.errorList.length > 0">
-          <div class="flex items-center justify-between mb-3">
-            <h4 class="font-medium text-gray-700">上报失败数据</h4>
-            <el-button type="primary" link size="small" @click="exportErrors">
-              导出失败数据
-            </el-button>
-          </div>
-          <el-table :data="reportResult.errorList" stripe max-height="250" size="small">
-            <el-table-column prop="dataCode" label="数据编号" width="120" />
-            <el-table-column prop="name" label="姓名" width="100" />
-            <el-table-column prop="errorMsg" label="错误原因" />
-          </el-table>
+        <div>
+          <p class="text-sm text-gray-700 mb-2">某批失败时</p>
+          <el-radio-group v-model="queueForm.failStrategy">
+            <el-radio label="PAUSE">暂停后续批次（推荐）</el-radio>
+            <el-radio label="CONTINUE">继续后续批次</el-radio>
+          </el-radio-group>
         </div>
-
-        <div v-if="reportResult.failCount > 0" class="mt-4 p-3 bg-yellow-50 rounded-lg">
-          <p class="text-sm text-yellow-700">
-            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            部分数据上报失败，您可以修正数据后重新上报
-          </p>
-        </div>
+        <p class="text-xs text-gray-400">
+          加入后后台异步分批上送，不阻塞页面；可在"上送队列"查看进度及每批请求/响应追踪
+        </p>
       </div>
 
       <template #footer>
         <div class="flex justify-end space-x-3">
-          <el-button @click="reportDialogVisible = false">关闭</el-button>
-          <el-button
-            v-if="reportResult?.failCount > 0"
-            type="primary"
-            @click="retryReport"
-            :loading="retrying"
-          >
-            重新上报失败数据
-          </el-button>
+          <el-button @click="queueDialogVisible = false">取消</el-button>
+          <el-button type="success" :loading="queuing" @click="confirmJoinQueue">加入上送队列</el-button>
         </div>
       </template>
     </el-dialog>
@@ -152,12 +122,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { excelApi } from '@/api'
-import { useUserStore } from '@/stores/user'
+import { ElMessage } from 'element-plus'
+import { excelApi, reportApi } from '@/api'
 
 const router = useRouter()
-const userStore = useUserStore()
 
 const loading = ref(false)
 const records = ref([])
@@ -167,10 +135,13 @@ const pagination = reactive({
   total: 0
 })
 
-const reportDialogVisible = ref(false)
-const reportResult = ref(null)
-const currentBatchNo = ref('')
-const retrying = ref(false)
+const queueDialogVisible = ref(false)
+const queuing = ref(false)
+const currentRow = ref(null)
+const queueForm = reactive({
+  batchSize: 500,
+  failStrategy: 'PAUSE'
+})
 
 const getStatusType = (status) => {
   const types = { 0: 'info', 1: 'success', 2: 'warning' }
@@ -217,63 +188,29 @@ const viewDetail = (row) => {
   router.push(`/data/${row.batchNo}`)
 }
 
-const reportData = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要将批次 ${row.batchNo} 的数据上报到国家平台吗？`,
-      '确认上报',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-
-    currentBatchNo.value = row.batchNo
-    ElMessage.info('正在上报数据，请稍候...')
-
-    const res = await excelApi.reportData(row.batchNo)
-    reportResult.value = res.data
-    reportDialogVisible.value = true
-
-    if (res.data.failCount === 0) {
-      ElMessage.success('数据上报成功')
-    } else {
-      ElMessage.warning(`上报完成，${res.data.failCount}条数据上报失败`)
-    }
-
-    fetchRecords()
-  } catch (error) {
-    if (error !== 'cancel') {
-      // 错误已在拦截器中处理
-    }
-  }
+const openQueueDialog = (row) => {
+  currentRow.value = row
+  queueForm.batchSize = 500
+  queueForm.failStrategy = 'PAUSE'
+  queueDialogVisible.value = true
 }
 
-const retryReport = async () => {
-  retrying.value = true
+const confirmJoinQueue = async () => {
+  if (!currentRow.value) return
+  queuing.value = true
   try {
-    const res = await excelApi.retryReport(currentBatchNo.value)
-    reportResult.value = res.data
-
-    if (res.data.failCount === 0) {
-      ElMessage.success('重新上报成功')
-    } else {
-      ElMessage.warning(`重新上报完成，仍有${res.data.failCount}条数据失败`)
-    }
-
-    fetchRecords()
+    await reportApi.createJob(currentRow.value.batchNo, {
+      batchSize: queueForm.batchSize,
+      failStrategy: queueForm.failStrategy
+    })
+    ElMessage.success('已加入上送队列，后台正在分批上送')
+    queueDialogVisible.value = false
+    router.push('/report-queue')
   } catch (error) {
-    // 错误已在拦截器中处理
+    // 拦截器统一提示
   } finally {
-    retrying.value = false
+    queuing.value = false
   }
-}
-
-const exportErrors = () => {
-  const token = userStore.token
-  const url = excelApi.exportErrors(currentBatchNo.value)
-  window.open(`${url}?token=${token}`, '_blank')
 }
 
 onMounted(() => {

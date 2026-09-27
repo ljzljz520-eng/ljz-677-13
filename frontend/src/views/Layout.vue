@@ -103,9 +103,24 @@ const ListIcon = () => h('svg', {
   })
 ])
 
+const QueueIcon = () => h('svg', {
+  class: 'w-5 h-5',
+  fill: 'none',
+  stroke: 'currentColor',
+  viewBox: '0 0 24 24'
+}, [
+  h('path', {
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    'stroke-width': '2',
+    d: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
+  })
+])
+
 const menuItems = [
   { path: '/import', name: '数据导入', icon: UploadIcon },
-  { path: '/records', name: '导入记录', icon: ListIcon }
+  { path: '/records', name: '导入记录', icon: ListIcon },
+  { path: '/report-queue', name: '上送队列', icon: QueueIcon }
 ]
 
 const isActive = (path) => {

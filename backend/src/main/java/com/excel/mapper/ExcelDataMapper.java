@@ -16,4 +16,14 @@ public interface ExcelDataMapper extends BaseMapper<ExcelData> {
 
     @Select("SELECT COUNT(*) FROM excel_data WHERE batch_no = #{batchNo} AND deleted = 0")
     Integer countByBatch(@Param("batchNo") String batchNo);
+
+    @org.apache.ibatis.annotations.Update(
+            "UPDATE excel_data SET report_status = 0, report_message = NULL, report_time = NULL " +
+            "WHERE batch_no = #{batchNo} AND report_status = 2 AND deleted = 0")
+    int clearFailedByBatch(@Param("batchNo") String batchNo);
+
+    @org.apache.ibatis.annotations.Update(
+            "<script>UPDATE excel_data SET report_status = 3 WHERE deleted = 0 AND id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach></script>")
+    int markSendingByIds(@Param("ids") java.util.Collection<Long> ids);
 }

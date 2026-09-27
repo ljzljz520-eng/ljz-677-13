@@ -135,6 +135,30 @@
         </el-table>
       </div>
 
+      <!-- 加入上送队列 -->
+      <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+        <h4 class="font-medium text-gray-700 mb-3">上送国家平台（队列异步分批，不阻塞页面）</h4>
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center">
+            <span class="text-sm text-gray-600 mr-2">每批数量</span>
+            <el-input-number v-model="reportForm.batchSize" :min="1" :max="5000" :step="100" size="small" />
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-600 mr-2">某批失败时</span>
+            <el-radio-group v-model="reportForm.failStrategy" size="small">
+              <el-radio-button label="PAUSE">暂停后续批次</el-radio-button>
+              <el-radio-button label="CONTINUE">继续后续批次</el-radio-button>
+            </el-radio-group>
+          </div>
+          <el-button type="success" :loading="queuing" @click="joinReportQueue">
+            加入上送队列
+          </el-button>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">
+          加入后数据按批次异步上送，可在"上送队列"页面查看待上送/上送中/成功/失败数量及每批请求响应
+        </p>
+      </div>
+
       <!-- 操作按钮 -->
       <div class="mt-6 flex justify-end space-x-3">
         <el-button @click="resetImport">继续导入</el-button>
@@ -156,7 +180,7 @@
         </div>
         <div class="flex items-start">
           <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium mr-3">3</span>
-          <p>导入完成后，可在"导入记录"中查看详情并上报数据到国家平台</p>
+          <p>导入完成后，可将数据"加入上送队列"，系统按批次异步上送国家平台</p>
         </div>
         <div class="flex items-start">
           <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium mr-3">4</span>
@@ -168,10 +192,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { excelApi } from '@/api'
+import { excelApi, reportApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -182,6 +206,11 @@ const selectedFile = ref(null)
 const uploading = ref(false)
 const uploadProgress = ref(0)
 const importResult = ref(null)
+const queuing = ref(false)
+const reportForm = reactive({
+  batchSize: 500,
+  failStrategy: 'PAUSE'
+})
 
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 B'
@@ -258,6 +287,23 @@ const resetImport = () => {
   uploadRef.value?.clearFiles()
   importResult.value = null
   uploadProgress.value = 0
+}
+
+const joinReportQueue = async () => {
+  if (!importResult.value?.batchNo) return
+  queuing.value = true
+  try {
+    await reportApi.createJob(importResult.value.batchNo, {
+      batchSize: reportForm.batchSize,
+      failStrategy: reportForm.failStrategy
+    })
+    ElMessage.success('已加入上送队列，正在后台分批上送')
+    router.push('/report-queue')
+  } catch (error) {
+    // 拦截器统一提示
+  } finally {
+    queuing.value = false
+  }
 }
 
 const goToDetail = () => {

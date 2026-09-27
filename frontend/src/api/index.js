@@ -89,4 +89,25 @@ export const excelApi = {
   }
 }
 
+export const reportApi = {
+  // 导入批次加入上送队列（异步分批上送，立即返回任务）
+  createJob: (batchNo, data) => request.post(`/report/jobs/${batchNo}`, data || {}),
+
+  getJobs: (params) => request.get('/report/jobs', { params }),
+
+  getJob: (jobId) => request.get(`/report/jobs/${jobId}`),
+
+  getBatches: (jobId) => request.get(`/report/jobs/${jobId}/batches`),
+
+  getBatch: (batchId) => request.get(`/report/batches/${batchId}`),
+
+  pause: (jobId) => request.post(`/report/jobs/${jobId}/pause`),
+
+  resume: (jobId) => request.post(`/report/jobs/${jobId}/resume`),
+
+  retry: (jobId) => request.post(`/report/jobs/${jobId}/retry`),
+
+  cancel: (jobId) => request.post(`/report/jobs/${jobId}/cancel`)
+}
+
 export default request
