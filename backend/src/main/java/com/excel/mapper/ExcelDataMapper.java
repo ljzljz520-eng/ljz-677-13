@@ -16,4 +16,8 @@ public interface ExcelDataMapper extends BaseMapper<ExcelData> {
 
     @Select("SELECT COUNT(*) FROM excel_data WHERE batch_no = #{batchNo} AND deleted = 0")
     Integer countByBatch(@Param("batchNo") String batchNo);
+
+    @Select("SELECT report_status AS status, COUNT(*) AS cnt FROM excel_data " +
+            "WHERE batch_no = #{batchNo} AND deleted = 0 GROUP BY report_status")
+    List<java.util.Map<String, Object>> countGroupByStatus(@Param("batchNo") String batchNo);
 }

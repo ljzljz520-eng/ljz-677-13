@@ -89,4 +89,30 @@ export const excelApi = {
   }
 }
 
+/** 上送队列 */
+export const reportTaskApi = {
+  // 创建上送任务（入队）
+  create: (data) => request.post('/report-task', data),
+  // 任务列表
+  page: (params) => request.get('/report-task', { params }),
+  // 任务详情
+  detail: (taskId) => request.get(`/report-task/${taskId}`),
+  // 任务下所有批次
+  batches: (taskId) => request.get(`/report-task/${taskId}/batches`),
+  // 单个批次详情（含完整请求/响应）
+  batchDetail: (batchId) => request.get(`/report-task/batch/${batchId}`),
+  // 暂停
+  pause: (taskId) => request.post(`/report-task/${taskId}/pause`),
+  // 继续
+  resume: (taskId) => request.post(`/report-task/${taskId}/resume`),
+  // 重试任务失败数据
+  retryFailed: (taskId) => request.post(`/report-task/${taskId}/retry-failed`),
+  // 重试单个批次
+  retryBatch: (batchId) => request.post(`/report-task/batch/${batchId}/retry`),
+  // 待上送/上送中/成功/失败数量
+  statusCount: (batchNo) => request.get(`/report-task/status/${batchNo}`),
+  // 按导入批次查最新上送任务
+  byBatchNo: (batchNo) => request.get(`/report-task/by-batch/${batchNo}`)
+}
+
 export default request

@@ -53,7 +53,7 @@ public class ExcelData {
     private String batchNo;
 
     /**
-     * 上报状态：0-待上报 1-已上报 2-上报失败
+     * 上报状态：0-待上报 1-已上报(成功) 2-上报失败 3-上送中
      */
     private Integer reportStatus;
 

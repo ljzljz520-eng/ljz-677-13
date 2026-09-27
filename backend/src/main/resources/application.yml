@@ -7,6 +7,11 @@ server:
       force: true
 
 spring:
+  # 启动时执行schema.sql（全部为 CREATE TABLE IF NOT EXISTS，幂等）
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
   servlet:
     multipart:
       max-file-size: 100MB
@@ -44,6 +49,21 @@ springdoc:
 jwt:
   secret: excel-import-system-jwt-secret-key-2024-very-long-and-secure
   expiration: 86400000
+
+# 上送队列配置（默认值，创建任务时可按任务覆盖批次大小/失败策略）
+report:
+  queue:
+    batch-size: 100              # 每批上送条数
+    continue-on-fail: false      # 某批失败后：false-暂停后续批次，true-继续
+    interval-ms: 500             # 批次间隔（毫秒），避免压垮平台
+    platform-url: http://localhost:8080/api/mock/national/report  # 国家平台模拟接口地址
+    connect-timeout-ms: 5000     # 连接超时
+    read-timeout-ms: 15000       # 读取超时
+    item-fail-rate: 0.05         # 模拟：单条数据校验失败率
+    batch-fail-rate: 0.10        # 模拟：整批被平台拒收的概率
+    batch-error-rate: 0.03       # 模拟：平台系统异常（HTTP 500）概率
+    latency-min-ms: 200          # 模拟：平台最小处理耗时
+    latency-max-ms: 800          # 模拟：平台最大处理耗时
 
 # 日志配置
 logging:

@@ -128,12 +128,15 @@ public class ExcelImportService {
     /**
      * 根据批次号获取数据
      */
-    public Page<ExcelData> getDataByBatch(String batchNo, Integer pageNum, Integer pageSize) {
+    public Page<ExcelData> getDataByBatch(String batchNo, Integer pageNum, Integer pageSize, Integer reportStatus) {
         Page<ExcelData> page = new Page<>(pageNum, pageSize);
-        return excelDataMapper.selectPage(page,
-                new LambdaQueryWrapper<ExcelData>()
-                        .eq(ExcelData::getBatchNo, batchNo)
-                        .orderByAsc(ExcelData::getId));
+        LambdaQueryWrapper<ExcelData> wrapper = new LambdaQueryWrapper<ExcelData>()
+                .eq(ExcelData::getBatchNo, batchNo);
+        if (reportStatus != null) {
+            wrapper.eq(ExcelData::getReportStatus, reportStatus);
+        }
+        wrapper.orderByAsc(ExcelData::getId);
+        return excelDataMapper.selectPage(page, wrapper);
     }
 
     /**

@@ -139,6 +139,13 @@
       <div class="mt-6 flex justify-end space-x-3">
         <el-button @click="resetImport">继续导入</el-button>
         <el-button type="primary" @click="goToDetail">查看详情</el-button>
+        <el-button
+          v-if="importResult.successCount > 0"
+          type="success"
+          @click="goToQueue"
+        >
+          加入上送队列
+        </el-button>
       </div>
     </div>
 
@@ -263,6 +270,12 @@ const resetImport = () => {
 const goToDetail = () => {
   if (importResult.value?.batchNo) {
     router.push(`/data/${importResult.value.batchNo}`)
+  }
+}
+
+const goToQueue = () => {
+  if (importResult.value?.batchNo) {
+    router.push(`/data/${importResult.value.batchNo}?enqueue=1`)
   }
 }
 </script>

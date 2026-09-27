@@ -28,6 +28,12 @@ const routes = [
         meta: { title: '导入记录' }
       },
       {
+        path: 'report-tasks',
+        name: 'ReportTasks',
+        component: () => import('@/views/ReportTasks.vue'),
+        meta: { title: '上送队列' }
+      },
+      {
         path: 'data/:batchNo',
         name: 'DataDetail',
         component: () => import('@/views/DataDetail.vue'),

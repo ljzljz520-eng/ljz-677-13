@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:smoke;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
+      continue-on-error: false
+  main:
+    allow-bean-definition-overriding: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    root: WARN
+    com.excel: INFO
+
+report:
+  queue:
+    batch-size: 20
+    continue-on-fail: false
+    interval-ms: 50
+    platform-url: http://localhost:9999/api/mock/national/report
+    item-fail-rate: 0.10
+    batch-fail-rate: 0.20
+    batch-error-rate: 0.10
+    latency-min-ms: 10
+    latency-max-ms: 30

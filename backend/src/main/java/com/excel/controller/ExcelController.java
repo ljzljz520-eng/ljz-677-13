@@ -76,8 +76,9 @@ public class ExcelController {
     public ApiResponse<Page<ExcelData>> getDataByBatch(
             @PathVariable String batchNo,
             @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
-        Page<ExcelData> page = excelImportService.getDataByBatch(batchNo, pageNum, pageSize);
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) Integer reportStatus) {
+        Page<ExcelData> page = excelImportService.getDataByBatch(batchNo, pageNum, pageSize, reportStatus);
         return ApiResponse.success(page);
     }
 
